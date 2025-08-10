@@ -43,6 +43,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/welcome': (context) => WelcomeScreen(),
           '/home': (context) => HomeScreen(),
+          '/gLocation': (context) => GoogleLocationScreen(),
           '/location': (context) => LocationScreen(
             searchQuery: ModalRoute.of(context)?.settings.arguments is Map
                 ? (ModalRoute.of(context)?.settings.arguments as Map)['searchQuery']

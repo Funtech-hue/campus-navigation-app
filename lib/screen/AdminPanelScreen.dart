@@ -12,7 +12,9 @@ import '../services/LocationProvider.dart';
 import '../model/location.dart';
 
 class AdminPanelScreen extends StatefulWidget {
-  const AdminPanelScreen({super.key});
+  final Location? location; // Optional: null for add, non-null for edit
+
+  const AdminPanelScreen({super.key, this.location});
 
   @override
   State<AdminPanelScreen> createState() => _AdminPanelScreenState();
@@ -53,8 +55,20 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
-    _startLocationUpdates();
+    if (widget.location != null) {
+      // Prefill for edit
+      _locationController.text = widget.location!.locationName;
+      _descriptionController.text = widget.location!.description;
+      _imageController.text = widget.location!.imageUrl;
+      _latitudeController.text = widget.location!.latitude.toStringAsFixed(6);
+      _longitudeController.text = widget.location!.longitude.toStringAsFixed(6);
+      _selectedCategory = widget.location!.category;
+      _currentLocationText = 'Existing Location: ${_latitudeController.text}, ${_longitudeController.text}';
+    } else {
+      // For add, get current location
+      _getCurrentLocation();
+      _startLocationUpdates();
+    }
   }
   // get current location
   Future<void> _getCurrentLocation() async {
@@ -119,7 +133,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       );
       setState(() {
         _currentLocationText =
-            'Current Location: ${position.latitude}, ${position.longitude}';
+        'Current Location: ${position.latitude}, ${position.longitude}';
         _latitudeController.text = position.latitude.toStringAsFixed(6);
         _longitudeController.text = position.longitude.toStringAsFixed(6);
       });
@@ -144,10 +158,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         distanceFilter: 5, // Update every 5 meters
       ),
     ).listen(
-      (Position position) {
+          (Position position) {
         setState(() {
           _currentLocationText =
-              'Current Location: ${position.latitude}, ${position.longitude}';
+          'Current Location: ${position.latitude}, ${position.longitude}';
           _latitudeController.text = position.latitude.toStringAsFixed(6);
           _longitudeController.text = position.longitude.toStringAsFixed(6);
         });
@@ -164,8 +178,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       },
     );
   }
-
-  //upload picture to storage
 
 // Pick image from gallery or camera
   Future<void> _pickImage(ImageSource source) async {
@@ -217,12 +229,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     }
   }
 
-  // add location
-  Future<void> _addLocation() async {
+  // submit location (add or update)
+  Future<void> _submitLocation() async {
     if (_formKey.currentState!.validate()) {
       setState(() => isLoading = true);
-      final location = Location(
-        id: const Uuid().v4(),
+      final locationData = Location(
+        id: widget.location?.id ?? const Uuid().v4(),
         locationName: _locationController.text,
         description: _descriptionController.text,
         imageUrl: _imageController.text,
@@ -231,29 +243,42 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         category: _selectedCategory ?? 'Other',
       );
       try {
-        await Provider.of<LocationProvider>(
-          context,
-          listen: false,
-        ).addLocation(location);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Location uploaded successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _formKey.currentState!.reset();
-        _locationController.clear();
-        _descriptionController.clear();
-        setState(() {
-          _selectedCategory = null;
-          _imageController.clear();
-          isLoading = false;
-        });
-        await _getCurrentLocation(); // Refresh location after submission
+        final provider = Provider.of<LocationProvider>(context, listen: false);
+        if (widget.location == null) {
+          // Add new
+          await provider.addLocation(locationData);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location uploaded successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _formKey.currentState!.reset();
+          _locationController.clear();
+          _descriptionController.clear();
+          setState(() {
+            _selectedCategory = null;
+            _imageController.clear();
+            _pickedImage = null; // Clear picked image
+            isLoading = false;
+          });
+          await _getCurrentLocation(); // Refresh location after submission
+        } else {
+          // Update existing
+          await provider.updateLocation(locationData);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          setState(() => isLoading = false);
+          Navigator.pop(context); // Go back after update
+        }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error uploading location: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -277,29 +302,36 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.location != null;
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        leading: IconButton(
+        leading: isEdit
+            ? IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, size: 28, color: Colors.white),
+          tooltip: 'Back',
+        )
+            : IconButton(
           onPressed: () {
             Navigator.pushReplacementNamed(context, '/welcome');
           },
           icon: const Icon(Icons.logout_sharp, size: 28, color: Colors.white),
           tooltip: 'Logout',
         ),
-        title: const Text(
-          'Admin Panel',
-          style: TextStyle(color: Colors.white, fontSize: 24),
+        title: Text(
+          isEdit ? 'Edit Location' : 'Admin Panel',
+          style: const TextStyle(color: Colors.white, fontSize: 24),
         ),
         centerTitle: true,
         backgroundColor: Colors.blue.shade800,
         elevation: 0,
-        actions: [
+        actions: isEdit?null: [
           IconButton(
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => LocationHistoryScreen()),
+                MaterialPageRoute(builder: (_) => const LocationHistoryScreen()),
               );
             },
             icon: const Icon(Icons.history_edu, size: 28, color: Colors.white),
@@ -318,7 +350,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Upload New Location',
+                isEdit ? 'Edit Location' : 'Upload New Location',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -373,12 +405,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         ),
                         value: _selectedCategory,
                         items:
-                            _categories.map((category) {
-                              return DropdownMenuItem<String>(
-                                value: category,
-                                child: Text(category),
-                              );
-                            }).toList(),
+                        _categories.map((category) {
+                          return DropdownMenuItem<String>(
+                            value: category,
+                            child: Text(category),
+                          );
+                        }).toList(),
                         onChanged: (value) {
                           setState(() {
                             _selectedCategory = value;
@@ -386,9 +418,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         },
                         validator:
                             (value) =>
-                                value == null
-                                    ? 'Please select a category'
-                                    : null,
+                        value == null
+                            ? 'Please select a category'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
@@ -477,18 +509,18 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         height: 50,
                         child: ElevatedButton.icon(
                           icon:
-                              isLoading
-                                  ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                  : const Icon(Icons.upload_rounded),
+                          isLoading
+                              ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                              : const Icon(Icons.upload_rounded),
                           label: Text(
-                            isLoading ? 'Submitting...' : 'Submit',
+                            isLoading ? 'Submitting...' : (isEdit ? 'Update' : 'Submit'),
                             style: const TextStyle(fontSize: 16),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -499,7 +531,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                             ),
                             elevation: 4,
                           ),
-                          onPressed: isLoading ? null : _addLocation,
+                          onPressed: isLoading ? null : _submitLocation,
                         ),
                       ),
                     ],

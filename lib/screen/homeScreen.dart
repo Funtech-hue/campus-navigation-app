@@ -84,20 +84,19 @@ class _HomeScreenState extends State<HomeScreen> {
     const double campusLat = 7.7115;
     const double campusLon = 4.5149;
     const double campusRadius = 500; // meters
+
     final double distanceToCampus = Geolocator.distanceBetween(latitude, longitude, campusLat, campusLon);
 
     if (distanceToCampus <= campusRadius) {
       try {
         final locations = await Provider.of<LocationProvider>(context, listen: false).locations.first;
         final nearbyLocation = locations.firstWhere(
-              (location) =>
-          Geolocator.distanceBetween(
+              (location) => Geolocator.distanceBetween(
             latitude,
             longitude,
             location.latitude,
             location.longitude,
-          ) <=
-              20, // Within 20 meters, using <= for boundary inclusion
+          ) <= 20, // Within 20 meters, using <= for boundary inclusion
           orElse: () => Location(
             id: '',
             locationName: 'North Campus',
@@ -109,9 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
         setState(() {
-          _currentLocationText = nearbyLocation.locationName.isNotEmpty
-              ? nearbyLocation.locationName
-              : 'North Campus'; // Ensure non-empty name
+          _currentLocationText = nearbyLocation.locationName.isNotEmpty ? nearbyLocation.locationName : 'North Campus'; // Ensure non-empty name
         });
       } catch (e) {
         setState(() {
@@ -176,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
@@ -267,40 +265,60 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         child: TextField(
-                          onSubmitted: (value) {
-                            if (value.isNotEmpty) {
-                              Navigator.pushNamed(
-                                context,
-                                '/location',
-                                arguments: {'searchQuery': value},
-                              );
-                            }
+                          onChanged: (value) {
+                            // Live search: update query in provider to filter the grid
+                            Provider.of<LocationProvider>(context, listen: false).setSearchQuery(value);
                           },
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(vertical: 15),
                             border: InputBorder.none,
-                            hintText: 'Search by name, type, or location',
+                            hintText: 'Search by name, category, or description',
                             prefixIcon: Icon(Icons.search, color: Colors.grey),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 6,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
+                    GestureDetector(
+                      onTap: () {
+                        // Show bottom sheet for category filter
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (context) {
+                            return ListView.builder(
+                              itemCount: categories.length,
+                              itemBuilder: (context, index) {
+                                final category = categories[index];
+                                final isSelected = locationProvider.selectedCategory == category;
+                                return ListTile(
+                                  title: Text(category),
+                                  trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                                  onTap: () {
+                                    locationProvider.setCategory(category);
+                                    Navigator.pop(context);
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 6,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.filter_alt_rounded, color: Colors.white),
                       ),
-                      child: const Icon(Icons.filter_alt_rounded, color: Colors.white),
                     ),
                   ],
                 ),
@@ -366,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
-                        childAspectRatio: 0.85
+                        childAspectRatio: 0.85,
                       ),
                       itemCount: locations.length,
                       itemBuilder: (context, index) {
