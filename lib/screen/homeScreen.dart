@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
@@ -94,8 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
             longitude,
             location.latitude,
             location.longitude,
-          ) <
-              20, // Within 20 meters
+          ) <=
+              20, // Within 20 meters, using <= for boundary inclusion
           orElse: () => Location(
             id: '',
             locationName: 'North Campus',
@@ -107,22 +109,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
         setState(() {
-          _currentLocationText = nearbyLocation.locationName;
+          _currentLocationText = nearbyLocation.locationName.isNotEmpty
+              ? nearbyLocation.locationName
+              : 'North Campus'; // Ensure non-empty name
         });
       } catch (e) {
         setState(() {
           _currentLocationText = 'North Campus';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error accessing Firestore: $e')),
+          SnackBar(content: Text('Error accessing Firestore: ${e.toString()}')),
         );
       }
     } else {
       try {
-        final placemarks = await geocoding.placemarkFromCoordinates(latitude, longitude);
+        // Try Google Play Services geocoding first
+        final placemarks = await geocoding.placemarkFromCoordinates(
+          latitude,
+          longitude,
+        );
         if (placemarks.isNotEmpty) {
           final placemark = placemarks.first;
           final locationName = [
+            placemark.subLocality,
             placemark.locality,
             placemark.administrativeArea,
             placemark.country,
@@ -136,16 +145,37 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       } catch (e) {
-        setState(() {
-          _currentLocationText = 'Unknown Location';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error getting location name: $e')),
-        );
+        // Fallback to Nominatim API
+        try {
+          final response = await http.get(
+            Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude'),
+            headers: {'User-Agent': 'FPECampusMap/1.0'},
+          );
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            final locationName = data['display_name'] ?? 'Unknown Location';
+            setState(() {
+              _currentLocationText = locationName.isNotEmpty ? locationName : 'Unknown Location';
+            });
+          } else {
+            setState(() {
+              _currentLocationText = 'Unknown Location';
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Nominatim API error: HTTP ${response.statusCode}')),
+            );
+          }
+        } catch (nominatimError) {
+          setState(() {
+            _currentLocationText = 'Unknown Location';
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error getting location name: ${nominatimError.toString()}')),
+          );
+        }
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
@@ -336,6 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
+                        childAspectRatio: 0.85
                       ),
                       itemCount: locations.length,
                       itemBuilder: (context, index) {
@@ -359,27 +390,27 @@ class _HomeScreenState extends State<HomeScreen> {
                                 width: 1,
                               ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                                  child: Image.network(
-                                    location.imageUrl,
-                                    height: 120,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Container(
+                            child: Padding(
+                              padding: const EdgeInsets.all(6.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                    child: Image.network(
+                                      location.imageUrl,
                                       height: 120,
                                       width: double.infinity,
-                                      color: Colors.grey.shade200,
-                                      child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => Container(
+                                        height: 120,
+                                        width: double.infinity,
+                                        color: Colors.grey.shade200,
+                                        child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 5),
+                                  Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -406,8 +437,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ],
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         );
