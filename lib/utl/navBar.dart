@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../screen/gLocationScreen.dart';
 import '../screen/homeScreen.dart';
 import '../screen/locationScreen.dart';
 
@@ -12,7 +13,7 @@ class NavBar extends StatefulWidget {
 
 class _NavBarState extends State<NavBar> {
   int _selectedIndex = 0;
-  final _pages = [HomeScreen(), LocationScreen(), LocationScreen()];
+  final _pages = [HomeScreen(), LocationScreen(), GoogleLocationScreen()];
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,6 @@
 import 'package:campus_map/screen/AdminLogin.dart';
 import 'package:campus_map/screen/AdminPanelScreen.dart';
+import 'package:campus_map/screen/gLocationScreen.dart';
 import 'package:campus_map/screen/homeScreen.dart';
 import 'package:campus_map/screen/locationHistoryScreen.dart';
 import 'package:campus_map/screen/locationScreen.dart';
