@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:geolocator/geolocator.dart';
@@ -25,6 +29,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   String _currentLocationText = 'Fetching location...';
   StreamSubscription<Position>? _positionStream;
 
+  final ImagePicker _picker = ImagePicker();
+  XFile? _pickedImage;
+  bool _uploadingImage = false;
+
+// TODO: MY Cloudinary details
+  static const String _cloudName = 'du8cdqkkj';
+  static const String _uploadPreset = 'campus-navigation';
+
   final List<String> _categories = [
     'Labs',
     'Offices',
@@ -44,7 +56,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     _getCurrentLocation();
     _startLocationUpdates();
   }
-
+  // get current location
   Future<void> _getCurrentLocation() async {
     setState(() {
       _currentLocationText = 'Fetching location...';
@@ -124,7 +136,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       );
     }
   }
-
+  // start location update
   void _startLocationUpdates() {
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
@@ -153,6 +165,59 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     );
   }
 
+  //upload picture to storage
+
+// Pick image from gallery or camera
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        setState(() => _pickedImage = image);
+        await _uploadImageToCloudinary(image);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Image picking failed: $e')),
+      );
+    }
+  }
+
+// Upload image to Cloudinary
+  Future<void> _uploadImageToCloudinary(XFile image) async {
+    setState(() => _uploadingImage = true);
+
+    final uri = Uri.parse("https://api.cloudinary.com/v1_1/$_cloudName/image/upload");
+    final request = http.MultipartRequest('POST', uri);
+    request.fields['upload_preset'] = _uploadPreset;
+    request.files.add(await http.MultipartFile.fromPath('file', image.path));
+
+    try {
+      final streamed = await request.send();
+      final res = await http.Response.fromStream(streamed);
+
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        String imageUrl = data['secure_url'];
+        setState(() {
+          _imageController.text = imageUrl; // so Provider still works
+          _uploadingImage = false;
+        });
+      } else {
+        throw Exception('Upload failed: ${res.body}');
+      }
+    } catch (e) {
+      setState(() => _uploadingImage = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cloudinary upload failed: $e')),
+      );
+    }
+  }
+
+  // add location
   Future<void> _addLocation() async {
     if (_formKey.currentState!.validate()) {
       setState(() => isLoading = true);
@@ -179,9 +244,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         _formKey.currentState!.reset();
         _locationController.clear();
         _descriptionController.clear();
-        _imageController.clear();
         setState(() {
           _selectedCategory = null;
+          _imageController.clear();
           isLoading = false;
         });
         await _getCurrentLocation(); // Refresh location after submission
@@ -196,6 +261,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       }
     }
   }
+
+
 
   @override
   void dispose() {
@@ -338,13 +405,56 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         icon: Icons.description,
                       ),
                       const SizedBox(height: 16),
-                      _buildTextField(
-                        controller: _imageController,
-                        label: 'Image URL (optional for future AR)',
-                        hint: 'https://example.com/image.jpg',
-                        icon: Icons.image,
-                        required: false,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Location Image', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (_) => Wrap(
+                                  children: [
+                                    ListTile(
+                                      leading: const Icon(Icons.photo_library),
+                                      title: const Text('Pick from Gallery'),
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        _pickImage(ImageSource.gallery);
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(Icons.camera_alt),
+                                      title: const Text('Take a Photo'),
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        _pickImage(ImageSource.camera);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: 150,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade400),
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.grey.shade100,
+                              ),
+                              child: _uploadingImage
+                                  ? const Center(child: CircularProgressIndicator())
+                                  : _pickedImage != null
+                                  ? Image.file(File(_pickedImage!.path), fit: BoxFit.cover)
+                                  : _imageController.text.isNotEmpty
+                                  ? Image.network(_imageController.text, fit: BoxFit.cover)
+                                  : const Center(child: Icon(Icons.add_a_photo, size: 40)),
+                            ),
+                          ),
+                        ],
                       ),
+
                       const SizedBox(height: 16),
                       _buildTextField(
                         controller: _latitudeController,
