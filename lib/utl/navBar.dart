@@ -13,7 +13,7 @@ class NavBar extends StatefulWidget {
 
 class _NavBarState extends State<NavBar> {
   int _selectedIndex = 0;
-  final _pages = [HomeScreen(), LocationScreen(), GoogleLocationScreen()];
+  final _pages = [HomeScreen(), LocationScreen()];
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +44,6 @@ class _NavBarState extends State<NavBar> {
           BottomNavigationBarItem(
             icon: Icon(Icons.location_on),
             label: 'Location',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.location_on),
-            label: 'Google Location',
           ),
         ],
       ),
