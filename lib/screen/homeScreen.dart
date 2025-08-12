@@ -35,7 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _currentLocationText = 'North Campus';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location services are disabled. Using default location.')),
+        const SnackBar(
+          content: Text(
+            'Location services are disabled. Using default location.',
+          ),
+        ),
       );
       return;
     }
@@ -48,7 +52,11 @@ class _HomeScreenState extends State<HomeScreen> {
           _currentLocationText = 'North Campus';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permissions denied. Using default location.')),
+          const SnackBar(
+            content: Text(
+              'Location permissions denied. Using default location.',
+            ),
+          ),
         );
         return;
       }
@@ -59,7 +67,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _currentLocationText = 'North Campus';
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location permissions permanently denied. Using default location.')),
+        const SnackBar(
+          content: Text(
+            'Location permissions permanently denied. Using default location.',
+          ),
+        ),
       );
       return;
     }
@@ -74,41 +86,59 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _currentLocationText = 'North Campus';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching location: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error fetching location: $e')));
     }
   }
 
-  Future<void> _updateCurrentLocationName(double latitude, double longitude) async {
+  Future<void> _updateCurrentLocationName(
+    double latitude,
+    double longitude,
+  ) async {
     const double campusLat = 7.7115;
     const double campusLon = 4.5149;
     const double campusRadius = 500; // meters
 
-    final double distanceToCampus = Geolocator.distanceBetween(latitude, longitude, campusLat, campusLon);
+    final double distanceToCampus = Geolocator.distanceBetween(
+      latitude,
+      longitude,
+      campusLat,
+      campusLon,
+    );
 
     if (distanceToCampus <= campusRadius) {
       try {
-        final locations = await Provider.of<LocationProvider>(context, listen: false).locations.first;
+        final locations =
+            await Provider.of<LocationProvider>(
+              context,
+              listen: false,
+            ).locations.first;
         final nearbyLocation = locations.firstWhere(
-              (location) => Geolocator.distanceBetween(
-            latitude,
-            longitude,
-            location.latitude,
-            location.longitude,
-          ) <= 20, // Within 20 meters, using <= for boundary inclusion
-          orElse: () => Location(
-            id: '',
-            locationName: 'North Campus',
-            description: '',
-            imageUrl: '',
-            latitude: 0,
-            longitude: 0,
-            category: 'Other',
-          ),
+          (location) =>
+              Geolocator.distanceBetween(
+                latitude,
+                longitude,
+                location.latitude,
+                location.longitude,
+              ) <=
+              20, // Within 20 meters, using <= for boundary inclusion
+          orElse:
+              () => Location(
+                id: '',
+                locationName: 'North Campus',
+                description: '',
+                imageUrl: '',
+                latitude: 0,
+                longitude: 0,
+                category: 'Other',
+              ),
         );
         setState(() {
-          _currentLocationText = nearbyLocation.locationName.isNotEmpty ? nearbyLocation.locationName : 'North Campus'; // Ensure non-empty name
+          _currentLocationText =
+              nearbyLocation.locationName.isNotEmpty
+                  ? nearbyLocation.locationName
+                  : 'North Campus'; // Ensure non-empty name
         });
       } catch (e) {
         setState(() {
@@ -128,13 +158,16 @@ class _HomeScreenState extends State<HomeScreen> {
         if (placemarks.isNotEmpty) {
           final placemark = placemarks.first;
           final locationName = [
-            placemark.subLocality,
-            placemark.locality,
-            placemark.administrativeArea,
-            placemark.country,
-          ].where((element) => element != null && element.isNotEmpty).join(', ');
+                placemark.subLocality,
+                placemark.locality,
+                placemark.administrativeArea,
+                placemark.country,
+              ]
+              .where((element) => element != null && element.isNotEmpty)
+              .join(', ');
           setState(() {
-            _currentLocationText = locationName.isNotEmpty ? locationName : 'Unknown Location';
+            _currentLocationText =
+                locationName.isNotEmpty ? locationName : 'Unknown Location';
           });
         } else {
           setState(() {
@@ -145,21 +178,28 @@ class _HomeScreenState extends State<HomeScreen> {
         // Fallback to Nominatim API
         try {
           final response = await http.get(
-            Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude'),
+            Uri.parse(
+              'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude',
+            ),
             headers: {'User-Agent': 'FPECampusMap/1.0'},
           );
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body);
             final locationName = data['display_name'] ?? 'Unknown Location';
             setState(() {
-              _currentLocationText = locationName.isNotEmpty ? locationName : 'Unknown Location';
+              _currentLocationText =
+                  locationName.isNotEmpty ? locationName : 'Unknown Location';
             });
           } else {
             setState(() {
               _currentLocationText = 'Unknown Location';
             });
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Nominatim API error: HTTP ${response.statusCode}')),
+              SnackBar(
+                content: Text(
+                  'Nominatim API error: HTTP ${response.statusCode}',
+                ),
+              ),
             );
           }
         } catch (nominatimError) {
@@ -167,7 +207,11 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentLocationText = 'Unknown Location';
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error getting location name: ${nominatimError.toString()}')),
+            SnackBar(
+              content: Text(
+                'Error getting location name: ${nominatimError.toString()}',
+              ),
+            ),
           );
         }
       }
@@ -177,7 +221,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
-    final categories = ['All', 'Labs', 'Offices', 'Hostels', 'Lecture Halls', 'Other'];
+    final categories = [
+      'Labs',
+      'Offices',
+      'Hostels',
+      'Department',
+      'Canteen',
+      'Buildings',
+      'Sport',
+      'Halls',
+      'Lecture Halls',
+      'Other',
+    ];
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -186,7 +241,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: _getCurrentLocation, // Manual pull-to-refresh
           color: Colors.blue.shade700,
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(), // Enable pull-to-refresh
+            physics: const AlwaysScrollableScrollPhysics(),
+            // Enable pull-to-refresh
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,7 +266,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () {
                         Navigator.pushNamed(context, '/about');
                       },
-                      icon: const Icon(Icons.admin_panel_settings, size: 28, color: Colors.blue),
+                      icon: const Icon(
+                        Icons.admin_panel_settings,
+                        size: 28,
+                        color: Colors.blue,
+                      ),
                       tooltip: 'Admin Panel',
                     ),
                     const SizedBox(width: 5),
@@ -218,7 +278,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () {
                         Navigator.pushReplacementNamed(context, '/welcome');
                       },
-                      icon: const Icon(Icons.logout, size: 28, color: Colors.blue),
+                      icon: const Icon(
+                        Icons.logout,
+                        size: 28,
+                        color: Colors.blue,
+                      ),
                       tooltip: 'Logout',
                     ),
                   ],
@@ -227,10 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Location
                 Text(
                   'Your current location',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -267,12 +328,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: TextField(
                           onChanged: (value) {
                             // Live search: update query in provider to filter the grid
-                            Provider.of<LocationProvider>(context, listen: false).setSearchQuery(value);
+                            Provider.of<LocationProvider>(
+                              context,
+                              listen: false,
+                            ).setSearchQuery(value);
                           },
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(vertical: 15),
                             border: InputBorder.none,
-                            hintText: 'Search by name, category, or description',
+                            hintText:
+                                'Search by name, category, or description',
                             prefixIcon: Icon(Icons.search, color: Colors.grey),
                           ),
                         ),
@@ -289,10 +354,18 @@ class _HomeScreenState extends State<HomeScreen> {
                               itemCount: categories.length,
                               itemBuilder: (context, index) {
                                 final category = categories[index];
-                                final isSelected = locationProvider.selectedCategory == category;
+                                final isSelected =
+                                    locationProvider.selectedCategory ==
+                                    category;
                                 return ListTile(
                                   title: Text(category),
-                                  trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                                  trailing:
+                                      isSelected
+                                          ? const Icon(
+                                            Icons.check,
+                                            color: Colors.blue,
+                                          )
+                                          : null,
                                   onTap: () {
                                     locationProvider.setCategory(category);
                                     Navigator.pop(context);
@@ -317,7 +390,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.filter_alt_rounded, color: Colors.white),
+                        child: const Icon(
+                          Icons.filter_alt_rounded,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -331,16 +407,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemCount: categories.length,
                     itemBuilder: (context, index) {
                       final category = categories[index];
-                      final isSelected = locationProvider.selectedCategory == category;
+                      final isSelected =
+                          locationProvider.selectedCategory == category;
                       return GestureDetector(
                         onTap: () {
                           locationProvider.setCategory(category);
                         },
                         child: Container(
                           margin: const EdgeInsets.only(right: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected ? Colors.blue.shade700 : Colors.white,
+                            color:
+                                isSelected
+                                    ? Colors.blue.shade700
+                                    : Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: const [
                               BoxShadow(
@@ -371,21 +454,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      return const Center(child: Text('Error loading locations'));
+                      return const Center(
+                        child: Text('Error loading locations'),
+                      );
                     }
                     final locations = snapshot.data ?? [];
                     if (locations.isEmpty) {
-                      return const Center(child: Text('No locations available'));
+                      return const Center(
+                        child: Text('No locations available'),
+                      );
                     }
                     return GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 0.85,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.85,
+                          ),
                       itemCount: locations.length,
                       itemBuilder: (context, index) {
                         final location = locations[index];
@@ -414,27 +502,50 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
                                     child: Image.network(
                                       location.imageUrl,
                                       height: 120,
                                       width: double.infinity,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Container(
-                                        height: 120,
-                                        width: double.infinity,
-                                        color: Colors.grey.shade200,
-                                        child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                                      ),
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Container(
+                                                height: 120,
+                                                width: double.infinity,
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(
+                                                  Icons.broken_image,
+                                                  size: 40,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
                                     ),
                                   ),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           location.locationName.isNotEmpty
-                                              ? location.locationName.split(' ').map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : '').join(' ')
+                                              ? location.locationName
+                                                  .split(' ')
+                                                  .map(
+                                                    (word) =>
+                                                        word.isNotEmpty
+                                                            ? word[0]
+                                                                    .toUpperCase() +
+                                                                word
+                                                                    .substring(
+                                                                      1,
+                                                                    )
+                                                                    .toLowerCase()
+                                                            : '',
+                                                  )
+                                                  .join(' ')
                                               : '',
                                           style: const TextStyle(
                                             fontSize: 15,
@@ -447,7 +558,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                         const SizedBox(height: 6),
                                         Text(
                                           location.description.isNotEmpty
-                                              ? location.description.split(' ').map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : '').join(' ')
+                                              ? location.description
+                                                  .split(' ')
+                                                  .map(
+                                                    (word) =>
+                                                        word.isNotEmpty
+                                                            ? word[0]
+                                                                    .toUpperCase() +
+                                                                word
+                                                                    .substring(
+                                                                      1,
+                                                                    )
+                                                                    .toLowerCase()
+                                                            : '',
+                                                  )
+                                                  .join(' ')
                                               : '',
                                           style: TextStyle(
                                             fontSize: 13,

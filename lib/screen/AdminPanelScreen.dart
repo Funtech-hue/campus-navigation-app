@@ -35,14 +35,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   XFile? _pickedImage;
   bool _uploadingImage = false;
 
-// TODO: MY Cloudinary details
+  // Define Cloudinary details: MY Cloudinary details
   static const String _cloudName = 'du8cdqkkj';
   static const String _uploadPreset = 'campus-navigation';
 
   final List<String> _categories = [
     'Labs',
     'Offices',
+    'Department',
     'Hostels',
+    'Canteen',
     'Buildings',
     'Sport',
     'Halls',
@@ -63,13 +65,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       _latitudeController.text = widget.location!.latitude.toStringAsFixed(6);
       _longitudeController.text = widget.location!.longitude.toStringAsFixed(6);
       _selectedCategory = widget.location!.category;
-      _currentLocationText = 'Existing Location: ${_latitudeController.text}, ${_longitudeController.text}';
+      _currentLocationText =
+          'Existing Location: ${_latitudeController.text}, ${_longitudeController.text}';
     } else {
       // For add, get current location
       _getCurrentLocation();
       _startLocationUpdates();
     }
   }
+
   // get current location
   Future<void> _getCurrentLocation() async {
     setState(() {
@@ -133,7 +137,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       );
       setState(() {
         _currentLocationText =
-        'Current Location: ${position.latitude}, ${position.longitude}';
+            'Current Location: ${position.latitude}, ${position.longitude}';
         _latitudeController.text = position.latitude.toStringAsFixed(6);
         _longitudeController.text = position.longitude.toStringAsFixed(6);
       });
@@ -150,6 +154,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       );
     }
   }
+
   // start location update
   void _startLocationUpdates() {
     _positionStream = Geolocator.getPositionStream(
@@ -158,10 +163,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         distanceFilter: 5, // Update every 5 meters
       ),
     ).listen(
-          (Position position) {
+      (Position position) {
         setState(() {
           _currentLocationText =
-          'Current Location: ${position.latitude}, ${position.longitude}';
+              'Current Location: ${position.latitude}, ${position.longitude}';
           _latitudeController.text = position.latitude.toStringAsFixed(6);
           _longitudeController.text = position.longitude.toStringAsFixed(6);
         });
@@ -179,7 +184,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     );
   }
 
-// Pick image from gallery or camera
+  // Pick image from gallery or camera
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -192,17 +197,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         await _uploadImageToCloudinary(image);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image picking failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Image picking failed: $e')));
     }
   }
 
-// Upload image to Cloudinary
+  // Upload image to Cloudinary
   Future<void> _uploadImageToCloudinary(XFile image) async {
     setState(() => _uploadingImage = true);
 
-    final uri = Uri.parse("https://api.cloudinary.com/v1_1/$_cloudName/image/upload");
+    final uri = Uri.parse(
+      "https://api.cloudinary.com/v1_1/$_cloudName/image/upload",
+    );
     final request = http.MultipartRequest('POST', uri);
     request.fields['upload_preset'] = _uploadPreset;
     request.files.add(await http.MultipartFile.fromPath('file', image.path));
@@ -223,9 +230,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       }
     } catch (e) {
       setState(() => _uploadingImage = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cloudinary upload failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Cloudinary upload failed: $e')));
     }
   }
 
@@ -277,17 +284,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
         setState(() => isLoading = false);
       }
     }
   }
-
-
 
   @override
   void dispose() {
@@ -306,19 +308,28 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        leading: isEdit
-            ? IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, size: 28, color: Colors.white),
-          tooltip: 'Back',
-        )
-            : IconButton(
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/welcome');
-          },
-          icon: const Icon(Icons.logout_sharp, size: 28, color: Colors.white),
-          tooltip: 'Logout',
-        ),
+        leading:
+            isEdit
+                ? IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    size: 28,
+                    color: Colors.white,
+                  ),
+                  tooltip: 'Back',
+                )
+                : IconButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/welcome');
+                  },
+                  icon: const Icon(
+                    Icons.logout_sharp,
+                    size: 28,
+                    color: Colors.white,
+                  ),
+                  tooltip: 'Logout',
+                ),
         title: Text(
           isEdit ? 'Edit Location' : 'Admin Panel',
           style: const TextStyle(color: Colors.white, fontSize: 24),
@@ -326,18 +337,27 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         centerTitle: true,
         backgroundColor: Colors.blue.shade800,
         elevation: 0,
-        actions: isEdit?null: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LocationHistoryScreen()),
-              );
-            },
-            icon: const Icon(Icons.history_edu, size: 28, color: Colors.white),
-            tooltip: 'Location History',
-          ),
-        ],
+        actions:
+            isEdit
+                ? null
+                : [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const LocationHistoryScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.history_edu,
+                      size: 28,
+                      color: Colors.white,
+                    ),
+                    tooltip: 'Location History',
+                  ),
+                ],
       ),
       body: RefreshIndicator(
         onRefresh: _getCurrentLocation, // Pull-to-refresh
@@ -405,12 +425,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         ),
                         value: _selectedCategory,
                         items:
-                        _categories.map((category) {
-                          return DropdownMenuItem<String>(
-                            value: category,
-                            child: Text(category),
-                          );
-                        }).toList(),
+                            _categories.map((category) {
+                              return DropdownMenuItem<String>(
+                                value: category,
+                                child: Text(category),
+                              );
+                            }).toList(),
                         onChanged: (value) {
                           setState(() {
                             _selectedCategory = value;
@@ -418,9 +438,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         },
                         validator:
                             (value) =>
-                        value == null
-                            ? 'Please select a category'
-                            : null,
+                                value == null
+                                    ? 'Please select a category'
+                                    : null,
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
@@ -440,32 +460,40 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Location Image', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            'Location Image',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(height: 8),
                           GestureDetector(
                             onTap: () {
                               showModalBottomSheet(
                                 context: context,
-                                builder: (_) => Wrap(
-                                  children: [
-                                    ListTile(
-                                      leading: const Icon(Icons.photo_library),
-                                      title: const Text('Pick from Gallery'),
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        _pickImage(ImageSource.gallery);
-                                      },
+                                builder:
+                                    (_) => Wrap(
+                                      children: [
+                                        ListTile(
+                                          leading: const Icon(
+                                            Icons.photo_library,
+                                          ),
+                                          title: const Text(
+                                            'Pick from Gallery',
+                                          ),
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                            _pickImage(ImageSource.gallery);
+                                          },
+                                        ),
+                                        ListTile(
+                                          leading: const Icon(Icons.camera_alt),
+                                          title: const Text('Take a Photo'),
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                            _pickImage(ImageSource.camera);
+                                          },
+                                        ),
+                                      ],
                                     ),
-                                    ListTile(
-                                      leading: const Icon(Icons.camera_alt),
-                                      title: const Text('Take a Photo'),
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        _pickImage(ImageSource.camera);
-                                      },
-                                    ),
-                                  ],
-                                ),
                               );
                             },
                             child: Container(
@@ -475,13 +503,27 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                                 borderRadius: BorderRadius.circular(12),
                                 color: Colors.grey.shade100,
                               ),
-                              child: _uploadingImage
-                                  ? const Center(child: CircularProgressIndicator())
-                                  : _pickedImage != null
-                                  ? Image.file(File(_pickedImage!.path), fit: BoxFit.cover)
-                                  : _imageController.text.isNotEmpty
-                                  ? Image.network(_imageController.text, fit: BoxFit.cover)
-                                  : const Center(child: Icon(Icons.add_a_photo, size: 40)),
+                              child:
+                                  _uploadingImage
+                                      ? const Center(
+                                        child: CircularProgressIndicator(),
+                                      )
+                                      : _pickedImage != null
+                                      ? Image.file(
+                                        File(_pickedImage!.path),
+                                        fit: BoxFit.cover,
+                                      )
+                                      : _imageController.text.isNotEmpty
+                                      ? Image.network(
+                                        _imageController.text,
+                                        fit: BoxFit.cover,
+                                      )
+                                      : const Center(
+                                        child: Icon(
+                                          Icons.add_a_photo,
+                                          size: 40,
+                                        ),
+                                      ),
                             ),
                           ),
                         ],
@@ -509,18 +551,20 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         height: 50,
                         child: ElevatedButton.icon(
                           icon:
-                          isLoading
-                              ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                              : const Icon(Icons.upload_rounded),
+                              isLoading
+                                  ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : const Icon(Icons.upload_rounded),
                           label: Text(
-                            isLoading ? 'Submitting...' : (isEdit ? 'Update' : 'Submit'),
+                            isLoading
+                                ? 'Submitting...'
+                                : (isEdit ? 'Update' : 'Submit'),
                             style: const TextStyle(fontSize: 16),
                           ),
                           style: ElevatedButton.styleFrom(

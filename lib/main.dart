@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
           '/locationHistory': (context) => LocationHistoryScreen(),
           '/navBar': (context) => NavBar(),
           '/login': (context) => LoginScreen(),
-          'about' : (context) => AboutUs()
+          '/about' : (context) => AboutUs()
         },
       ),
     );
