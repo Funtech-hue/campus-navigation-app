@@ -1,5 +1,6 @@
 import 'package:campus_map/screen/AdminLogin.dart';
 import 'package:campus_map/screen/AdminPanelScreen.dart';
+import 'package:campus_map/screen/aboutUS.dart';
 import 'package:campus_map/screen/gLocationScreen.dart';
 import 'package:campus_map/screen/homeScreen.dart';
 import 'package:campus_map/screen/locationHistoryScreen.dart';
@@ -57,11 +58,13 @@ class MyApp extends StatelessWidget {
           '/locationHistory': (context) => LocationHistoryScreen(),
           '/navBar': (context) => NavBar(),
           '/login': (context) => LoginScreen(),
+          'about' : (context) => AboutUs()
         },
       ),
     );
   }
 }
+
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -83,9 +86,22 @@ class WelcomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Lottie.asset('assets/images/world_map.json', fit: BoxFit.contain),
+            // --- App Logo ---
+            Image.asset(
+              'assets/images/logo.png',
+              width: 100,
+              height: 100,
+            ),
+            const SizedBox(height: 20),
+
+            // --- Lottie Animation ---
+            Lottie.asset(
+              'assets/images/world_map.json',
+              fit: BoxFit.contain,
+            ),
+
             const SizedBox(height: 30),
-            Text(
+            const Text(
               'Welcome to',
               style: TextStyle(
                 fontSize: 24,
@@ -94,7 +110,7 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'FPE North Campus\nNavigation System',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -110,10 +126,7 @@ class WelcomeScreen extends StatelessWidget {
               text: 'Explore',
               icon: Icons.explore,
               onPressed: () {
-                Navigator.pushReplacementNamed(
-                  context,
-                  '/navBar',
-                );
+                Navigator.pushReplacementNamed(context, '/navBar');
               },
             ),
             const SizedBox(height: 20),
@@ -123,10 +136,7 @@ class WelcomeScreen extends StatelessWidget {
               icon: Icons.admin_panel_settings,
               fontSize: 14,
               onPressed: () {
-                Navigator.pushReplacementNamed(
-                  context,
-                  '/admin',
-                );
+                Navigator.pushReplacementNamed(context, '/admin');
               },
             ),
           ],
@@ -135,13 +145,13 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildButton(
-    BuildContext context, {
-    required String text,
-    required IconData icon,
-    required VoidCallback onPressed,
-    double fontSize = 18,
-  }) {
+  static Widget _buildButton(
+      BuildContext context, {
+        required String text,
+        required IconData icon,
+        required VoidCallback onPressed,
+        double fontSize = 18,
+      }) {
     return SizedBox(
       width: 180,
       height: 50,
@@ -168,3 +178,4 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 }
+

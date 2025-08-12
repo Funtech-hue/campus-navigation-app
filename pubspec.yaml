@@ -42,6 +42,7 @@ dependencies:
   http: ^1.5.0
   google_maps_flutter: ^2.12.3
   flutter_typeahead: ^5.2.0
+  curved_navigation_bar: ^1.0.6
 arcore_flutter_plugin:
   git:
     url: https://github.com/giandifra/arcore_flutter_plugin.git

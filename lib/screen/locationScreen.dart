@@ -219,13 +219,6 @@ class _LocationScreenState extends State<LocationScreen> {
                   errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 40),
                 ),
               ),
-            if (location != null)
-              Text(
-                location.locationName,
-                style: const TextStyle(fontSize: 12, color: Colors.black, backgroundColor: Colors.white),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
             Icon(Icons.location_pin, color: iconColor, size: 32),
           ],
         ),
@@ -308,6 +301,7 @@ class _LocationScreenState extends State<LocationScreen> {
     if (_currentPosition == null || _destination == null) return;
 
     try {
+      await _mapController?.clearAllRoads();  // Clear previous routes
       await _clearStaticMarkers();
       await _reloadFirestoreMarkers();
       _routeInfo = await _mapController?.drawRoad(

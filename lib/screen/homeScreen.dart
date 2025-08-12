@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Welcome to\nFPE North Campus Map',
+                        'Welcome to\nFPE North Campus Maps',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -208,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     IconButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/admin');
+                        Navigator.pushNamed(context, '/about');
                       },
                       icon: const Icon(Icons.admin_panel_settings, size: 28, color: Colors.blue),
                       tooltip: 'Admin Panel',
@@ -433,7 +433,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          location.locationName,
+                                          location.locationName.isNotEmpty
+                                              ? location.locationName.split(' ').map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : '').join(' ')
+                                              : '',
                                           style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
@@ -444,7 +446,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const SizedBox(height: 6),
                                         Text(
-                                          location.description,
+                                          location.description.isNotEmpty
+                                              ? location.description.split(' ').map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : '').join(' ')
+                                              : '',
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: Colors.grey.shade600,
